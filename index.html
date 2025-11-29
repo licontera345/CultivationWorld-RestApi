@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cultivation World - Simulador</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600&family=Nunito:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="hero">
+    <div class="overlay"></div>
+    <div class="hero-content">
+      <p class="eyebrow">Simulador de progresión</p>
+      <h1>Camino hacia la Inmortalidad</h1>
+      <p class="lede">Entrena, supera tribulaciones y avanza a través de los reinos para convertirte en un ser eterno.</p>
+      <div class="hero-actions">
+        <button id="meditate-btn" class="primary">Meditar</button>
+        <button id="save-btn" class="ghost">Guardar progreso</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="container">
+    <section class="card status">
+      <div class="status-top">
+        <div>
+          <p class="label">Reino actual</p>
+          <h2 id="realm-name">Refinación del Qi</h2>
+          <p class="label">Nivel</p>
+          <p id="realm-level" class="value">1</p>
+        </div>
+        <div class="stats">
+          <div>
+            <p class="label">HP</p>
+            <p id="hp-value" class="value">100 / 100</p>
+          </div>
+          <div>
+            <p class="label">Energía</p>
+            <p id="energy-value" class="value">50 / 50</p>
+          </div>
+        </div>
+      </div>
+      <div class="bars">
+        <div class="bar hp-bar">
+          <div id="hp-bar" class="fill"></div>
+          <span id="hp-text" class="bar-text">100 / 100</span>
+        </div>
+        <div class="bar xp-bar">
+          <div id="xp-bar" class="fill"></div>
+          <span id="xp-text" class="bar-text">0 / 100</span>
+        </div>
+        <div class="bar energy-bar">
+          <div id="energy-bar" class="fill"></div>
+          <span id="energy-text" class="bar-text">50 / 50</span>
+        </div>
+      </div>
+      <div class="stat-grid">
+        <div>
+          <p class="label">Ataque</p>
+          <p id="attack-value" class="value">10</p>
+        </div>
+        <div>
+          <p class="label">Defensa</p>
+          <p id="defense-value" class="value">5</p>
+        </div>
+        <div>
+          <p class="label">XP total</p>
+          <p id="total-xp" class="value">0</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="grid">
+      <div class="card">
+        <header class="card-header">
+          <div>
+            <p class="label">Misiones</p>
+            <h3>Desafíos del cultivador</h3>
+          </div>
+          <small id="mission-hint" class="hint">Elige una misión para ganar XP.</small>
+        </header>
+        <div id="missions" class="list"></div>
+      </div>
+
+      <div class="card">
+        <header class="card-header">
+          <div>
+            <p class="label">Habilidades</p>
+            <h3>Técnicas disponibles</h3>
+          </div>
+          <small class="hint">Usa habilidades durante el combate.</small>
+        </header>
+        <div id="skills" class="list skills"></div>
+      </div>
+    </section>
+
+    <section class="card combat" id="combat-section">
+      <header class="card-header">
+        <div>
+          <p class="label">Combate</p>
+          <h3 id="enemy-name">Sin enemigo</h3>
+        </div>
+        <div class="enemy-stats">
+          <p class="label">HP enemigo</p>
+          <p id="enemy-hp" class="value">-</p>
+        </div>
+      </header>
+      <div id="combat-log" class="log"></div>
+      <div class="actions" id="skill-actions"></div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <p>Progreso guardado localmente. Forja tu propio destino inmortal.</p>
+  </footer>
+
+  <script src="script.js"></script>
+</body>
+</html>
