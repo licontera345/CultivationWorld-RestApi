@@ -71,6 +71,14 @@
           <p class="label">XP total</p>
           <p id="total-xp" class="value">0</p>
         </div>
+        <div>
+          <p class="label">Mérito</p>
+          <p id="merit-value" class="value">0</p>
+        </div>
+        <div>
+          <p class="label">Renombre</p>
+          <p id="fame-value" class="value">0</p>
+        </div>
       </div>
     </section>
 
@@ -96,6 +104,17 @@
         </header>
         <div id="skills" class="list skills"></div>
       </div>
+
+      <div class="card">
+        <header class="card-header">
+          <div>
+            <p class="label">Reliquias</p>
+            <h3>Artefactos ancestrales</h3>
+          </div>
+          <small class="hint">Intercambia mérito por mejoras pasivas.</small>
+        </header>
+        <div id="relics" class="list"></div>
+      </div>
     </section>
 
     <section class="card combat" id="combat-section">
@@ -111,6 +130,21 @@
       </header>
       <div id="combat-log" class="log"></div>
       <div class="actions" id="skill-actions"></div>
+    </section>
+
+    <section class="card rituals">
+      <header class="card-header">
+        <div>
+          <p class="label">Expansión</p>
+          <h3>Acciones de largo alcance</h3>
+        </div>
+        <small class="hint">Explora el mundo o realiza rituales para desbloquear rutas.</small>
+      </header>
+      <div class="actions">
+        <button id="explore-btn" class="primary">Explorar tierras lejanas</button>
+        <button id="ritual-btn" class="ghost">Ritual de iluminación</button>
+      </div>
+      <p class="hint">Estas acciones consumen energía y pueden otorgar XP, mérito o encuentros especiales.</p>
     </section>
   </main>
 
