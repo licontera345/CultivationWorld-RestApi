@@ -97,6 +97,38 @@ const defaultMissions = [
     energyCost: 16,
     enemy: { name: "Rayo Purificador", hp: 90, attack: 20, defense: 8 },
     completed: false
+  },
+  {
+    id: "cultivar",
+    title: "Custodiar el Jardín Espiritual",
+    description: "Protege los campos de espíritu mientras absorbes su energía.",
+    type: "recoleccion",
+    xpReward: 55,
+    meritReward: 10,
+    energyCost: 10,
+    completed: false
+  },
+  {
+    id: "bandidos",
+    title: "Expulsar Bandidos del Valle",
+    description: "Una banda de mortales codicia las reliquias cercanas.",
+    type: "combate",
+    xpReward: 75,
+    meritReward: 14,
+    energyCost: 14,
+    enemy: { name: "Bandido Alquimista", hp: 80, attack: 17, defense: 7 },
+    completed: false
+  },
+  {
+    id: "bestia-antigua",
+    title: "Sello de la Bestia Antigua",
+    description: "Un sello debilitado amenaza con liberar una bestia del pasado.",
+    type: "combate",
+    xpReward: 120,
+    meritReward: 24,
+    energyCost: 20,
+    enemy: { name: "Serpiente de Obsidiana", hp: 120, attack: 26, defense: 12 },
+    completed: false
   }
 ];
 
@@ -151,6 +183,7 @@ let missions = [...defaultMissions];
 let currentEnemy = null;
 let activeMissionId = null;
 let enemyDefenseShield = false;
+let meditateInterval = null;
 
 const meditateBtn = document.getElementById("meditate-btn");
 const saveBtn = document.getElementById("save-btn");
@@ -165,10 +198,21 @@ const relicsContainer = document.getElementById("relics");
 const exploreBtn = document.getElementById("explore-btn");
 const ritualBtn = document.getElementById("ritual-btn");
 
-meditateBtn.addEventListener("click", () => {
-  gainExperience(12, "Meditación tranquila: +12 XP");
-  recoverEnergy(6);
-  updateUI();
+meditateBtn.addEventListener("click", meditateAction);
+meditateBtn.addEventListener("mousedown", startMeditationLoop);
+meditateBtn.addEventListener("mouseup", stopMeditationLoop);
+meditateBtn.addEventListener("mouseleave", stopMeditationLoop);
+meditateBtn.addEventListener("touchstart", startMeditationLoop);
+meditateBtn.addEventListener("touchend", stopMeditationLoop);
+meditateBtn.addEventListener("keydown", (event) => {
+  if (event.code === "Space" || event.code === "Enter") {
+    startMeditationLoop();
+  }
+});
+meditateBtn.addEventListener("keyup", (event) => {
+  if (event.code === "Space" || event.code === "Enter") {
+    stopMeditationLoop();
+  }
 });
 
 saveBtn.addEventListener("click", () => {
@@ -195,8 +239,20 @@ function loadGame() {
     if (!player.skills) {
       player.skills = [...defaultSkills];
     }
-    missions = parsed.missions?.length ? parsed.missions : [...defaultMissions];
+    missions = mergeMissions(parsed.missions?.length ? parsed.missions : [...defaultMissions]);
   }
+}
+
+function mergeMissions(existing) {
+  const missionMap = new Map(existing.map((mission) => [mission.id, mission]));
+
+  defaultMissions.forEach((mission) => {
+    if (!missionMap.has(mission.id)) {
+      existing.push({ ...mission });
+    }
+  });
+
+  return existing;
 }
 
 function saveGame() {
@@ -218,6 +274,25 @@ function hardReset() {
   localStorage.removeItem("gameState");
   updateUI();
   addLog("Todo vuelve a su estado inicial. Tu viaje re comienza.");
+}
+
+function meditateAction() {
+  gainExperience(12, "Meditación tranquila: +12 XP");
+  recoverEnergy(6);
+  updateUI();
+}
+
+function startMeditationLoop() {
+  if (meditateInterval) return;
+  meditateAction();
+  meditateInterval = setInterval(meditateAction, 500);
+}
+
+function stopMeditationLoop() {
+  if (meditateInterval) {
+    clearInterval(meditateInterval);
+    meditateInterval = null;
+  }
 }
 
 function updateUI() {
