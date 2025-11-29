@@ -97,7 +97,7 @@ const defaultMissions = [
   }
 ];
 
-let player = {
+const basePlayer = {
   realmIndex: 1,
   level: 1,
   xp: 0,
@@ -109,8 +109,10 @@ let player = {
   maxEnergy: 50,
   attack: 10,
   defense: 5,
-  skills: defaultSkills
+  skills: [...defaultSkills]
 };
+
+let player = { ...basePlayer };
 
 let missions = [...defaultMissions];
 let currentEnemy = null;
@@ -119,6 +121,7 @@ let enemyDefenseShield = false;
 
 const meditateBtn = document.getElementById("meditate-btn");
 const saveBtn = document.getElementById("save-btn");
+const resetBtn = document.getElementById("reset-btn");
 const missionsContainer = document.getElementById("missions");
 const skillsContainer = document.getElementById("skills");
 const skillActionsContainer = document.getElementById("skill-actions");
@@ -137,12 +140,22 @@ saveBtn.addEventListener("click", () => {
   addLog("Progreso guardado en tu anillo espacial.");
 });
 
+resetBtn.addEventListener("click", () => {
+  const confirmar = confirm("Esto reiniciará tu progreso y limpiará el almacenamiento local. ¿Continuar?");
+  if (confirmar) {
+    hardReset();
+  }
+});
+
 function loadGame() {
   const stored = localStorage.getItem("gameState");
   if (stored) {
     const parsed = JSON.parse(stored);
-    player = { ...player, ...parsed.player };
-    missions = parsed.missions || missions;
+    player = { ...basePlayer, ...parsed.player };
+    if (!player.skills) {
+      player.skills = [...defaultSkills];
+    }
+    missions = parsed.missions?.length ? parsed.missions : [...defaultMissions];
   }
 }
 
@@ -154,24 +167,17 @@ function saveGame() {
 }
 
 function resetState() {
-  player = {
-    ...player,
-    realmIndex: 1,
-    level: 1,
-    xp: 0,
-    xpToNext: 100,
-    totalXp: 0,
-    hp: 100,
-    maxHp: 100,
-    energy: 50,
-    maxEnergy: 50,
-    attack: 10,
-    defense: 5,
-    skills: defaultSkills
-  };
+  player = { ...basePlayer, skills: [...defaultSkills] };
   missions = [...defaultMissions];
   activeMissionId = null;
   currentEnemy = null;
+}
+
+function hardReset() {
+  resetState();
+  localStorage.removeItem("gameState");
+  updateUI();
+  addLog("Todo vuelve a su estado inicial. Tu viaje re comienza.");
 }
 
 function updateUI() {
@@ -222,6 +228,14 @@ function renderMissions() {
     reward.className = "badge";
     reward.textContent = `+${mission.xpReward} XP`;
 
+    const energy = document.createElement("span");
+    energy.className = "badge";
+    energy.textContent = `Coste: ${mission.energyCost} EN`;
+
+    const type = document.createElement("span");
+    type.className = "badge";
+    type.textContent = mission.type === "combate" ? "Combate" : "Exploración";
+
     const button = document.createElement("button");
     button.textContent = mission.completed ? "Completada" : "Iniciar";
     button.className = mission.completed ? "ghost" : "primary";
@@ -229,7 +243,7 @@ function renderMissions() {
 
     button.addEventListener("click", () => startMission(mission.id));
 
-    meta.append(reward, button);
+    meta.append(reward, energy, type, button);
     item.append(info, meta);
     missionsContainer.appendChild(item);
   });
