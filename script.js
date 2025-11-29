@@ -72,6 +72,7 @@ const defaultMissions = [
     description: "Busca ingredientes raros en los valles nublados.",
     type: "recoleccion",
     xpReward: 40,
+    meritReward: 8,
     energyCost: 8,
     completed: false
   },
@@ -81,6 +82,7 @@ const defaultMissions = [
     description: "Un lobo espiritual amenaza a los aldeanos cercanos.",
     type: "combate",
     xpReward: 60,
+    meritReward: 12,
     energyCost: 12,
     enemy: { name: "Lobo Escarlata", hp: 70, attack: 15, defense: 5 },
     completed: false
@@ -91,9 +93,37 @@ const defaultMissions = [
     description: "Atrapa un relámpago para templar tu núcleo.",
     type: "combate",
     xpReward: 90,
+    meritReward: 18,
     energyCost: 16,
     enemy: { name: "Rayo Purificador", hp: 90, attack: 20, defense: 8 },
     completed: false
+  }
+];
+
+const relicPool = [
+  {
+    id: "anillo",
+    name: "Anillo de la Grulla Blanca",
+    description: "Reduce el daño recibido gracias a un campo etéreo.",
+    meritCost: 18,
+    realmRequired: 1,
+    bonus: { defense: 4 }
+  },
+  {
+    id: "guqin",
+    name: "Guqin del Alba",
+    description: "Su música incrementa la percepción y el renombre.",
+    meritCost: 26,
+    realmRequired: 3,
+    bonus: { fame: 8, xpToNextMultiplier: 0.9 }
+  },
+  {
+    id: "loto-escarcha",
+    name: "Loto de Escarcha Ancestral",
+    description: "Recupera energía más rápido tras cada acción.",
+    meritCost: 32,
+    realmRequired: 4,
+    bonus: { energyRegen: 4 }
   }
 ];
 
@@ -109,6 +139,9 @@ const basePlayer = {
   maxEnergy: 50,
   attack: 10,
   defense: 5,
+  merit: 0,
+  fame: 0,
+  relics: [],
   skills: [...defaultSkills]
 };
 
@@ -128,6 +161,9 @@ const skillActionsContainer = document.getElementById("skill-actions");
 const combatLog = document.getElementById("combat-log");
 const enemyName = document.getElementById("enemy-name");
 const enemyHp = document.getElementById("enemy-hp");
+const relicsContainer = document.getElementById("relics");
+const exploreBtn = document.getElementById("explore-btn");
+const ritualBtn = document.getElementById("ritual-btn");
 
 meditateBtn.addEventListener("click", () => {
   gainExperience(12, "Meditación tranquila: +12 XP");
@@ -147,11 +183,15 @@ resetBtn.addEventListener("click", () => {
   }
 });
 
+exploreBtn.addEventListener("click", exploreFrontier);
+ritualBtn.addEventListener("click", performRitual);
+
 function loadGame() {
   const stored = localStorage.getItem("gameState");
   if (stored) {
     const parsed = JSON.parse(stored);
     player = { ...basePlayer, ...parsed.player };
+    if (!player.relics) player.relics = [];
     if (!player.skills) {
       player.skills = [...defaultSkills];
     }
@@ -167,7 +207,7 @@ function saveGame() {
 }
 
 function resetState() {
-  player = { ...basePlayer, skills: [...defaultSkills] };
+  player = { ...basePlayer, skills: [...defaultSkills], relics: [] };
   missions = [...defaultMissions];
   activeMissionId = null;
   currentEnemy = null;
@@ -188,6 +228,8 @@ function updateUI() {
   document.getElementById("attack-value").innerText = player.attack;
   document.getElementById("defense-value").innerText = player.defense;
   document.getElementById("total-xp").innerText = player.totalXp;
+  document.getElementById("merit-value").innerText = player.merit;
+  document.getElementById("fame-value").innerText = player.fame;
 
   const hpPercent = Math.max(0, (player.hp / player.maxHp) * 100);
   document.getElementById("hp-bar").style.width = `${hpPercent}%`;
@@ -203,6 +245,7 @@ function updateUI() {
 
   renderMissions();
   renderSkills();
+  renderRelics();
   renderSkillActions();
   updateEnemyUI();
   saveGame();
@@ -284,6 +327,46 @@ function renderSkills() {
       item.style.opacity = 0.5;
     }
     skillsContainer.appendChild(item);
+  });
+}
+
+function renderRelics() {
+  relicsContainer.innerHTML = "";
+  relicPool.forEach((relic) => {
+    const owned = player.relics.includes(relic.id);
+    const allowed = player.realmIndex >= relic.realmRequired;
+
+    const item = document.createElement("div");
+    item.className = "item";
+
+    const info = document.createElement("div");
+    info.className = "info";
+    const title = document.createElement("h4");
+    title.textContent = relic.name;
+    const desc = document.createElement("p");
+    desc.textContent = relic.description;
+    info.append(title, desc);
+
+    const meta = document.createElement("div");
+    meta.className = "meta";
+    const cost = document.createElement("span");
+    cost.className = "badge";
+    cost.textContent = `${relic.meritCost} mérito`;
+
+    const state = document.createElement("small");
+    state.className = "hint";
+    state.textContent = owned ? "Ya vinculada" : allowed ? "Disponible" : `Requiere ${realms[relic.realmRequired]}`;
+
+    const button = document.createElement("button");
+    button.textContent = owned ? "Activa" : "Vincular";
+    button.className = owned ? "ghost" : "primary";
+    button.disabled = owned || !allowed || player.merit < relic.meritCost;
+    button.addEventListener("click", () => purchaseRelic(relic));
+
+    meta.append(cost, state, button);
+    item.append(info, meta);
+    if (!allowed) item.style.opacity = 0.6;
+    relicsContainer.appendChild(item);
   });
 }
 
@@ -404,6 +487,7 @@ function endCombat(victory) {
 function completeMission(mission, message) {
   mission.completed = true;
   gainExperience(mission.xpReward, message);
+  gainMerit(mission.meritReward || 0);
   recoverEnergy(6);
 }
 
@@ -414,8 +498,20 @@ function gainExperience(amount, message) {
   checkLevelUp();
 }
 
+function gainMerit(amount) {
+  if (!amount) return;
+  player.merit += amount;
+  addLog(`Ganas ${amount} de mérito sectario.`);
+}
+
+function gainFame(amount) {
+  if (!amount) return;
+  player.fame += amount;
+}
+
 function recoverEnergy(amount) {
-  player.energy = Math.min(player.maxEnergy, player.energy + amount);
+  const bonus = getEnergyRegenBonus();
+  player.energy = Math.min(player.maxEnergy, player.energy + amount + bonus);
 }
 
 function checkLevelUp() {
@@ -433,7 +529,9 @@ function checkLevelUp() {
       player.maxEnergy = Math.round(player.maxEnergy * 1.3);
       player.attack = Math.round(player.attack * 1.25);
       player.defense = Math.round(player.defense * 1.22);
+      gainFame(5);
       addLog(`¡Avanzas al reino ${realms[player.realmIndex]}! Tus estadísticas se fortalecen.`);
+      unlockAdvancedSkills();
     } else {
       player.maxHp += 8;
       player.maxEnergy += 6;
@@ -444,9 +542,121 @@ function checkLevelUp() {
 
     player.hp = player.maxHp;
     player.energy = player.maxEnergy;
-    player.xpToNext = Math.round(player.xpToNext * 1.45);
+    const multiplier = getXpMultiplierFromRelics();
+    player.xpToNext = Math.round(player.xpToNext * 1.45 * multiplier);
   }
   if (leveled) updateUI();
+}
+
+function unlockAdvancedSkills() {
+  const newSkills = [
+    {
+      id: "corte-astral",
+      name: "Corte Astral",
+      type: "ataque",
+      damage: 34,
+      cost: 12,
+      description: "Un filo que divide el cielo en dos.",
+      requiredRealm: 5
+    },
+    {
+      id: "escudo-celestial",
+      name: "Escudo del Cielo Quieto",
+      type: "defensa",
+      damage: 0,
+      cost: 10,
+      description: "Mitiga el próximo ataque por completo.",
+      requiredRealm: 6
+    }
+  ];
+
+  newSkills.forEach((skill) => {
+    const already = player.skills.some((s) => s.id === skill.id);
+    if (!already && player.realmIndex >= skill.requiredRealm) {
+      player.skills.push(skill);
+      addLog(`Has comprendido ${skill.name} al ascender.`);
+    }
+  });
+}
+
+function purchaseRelic(relic) {
+  if (player.merit < relic.meritCost || player.relics.includes(relic.id)) return;
+  player.merit -= relic.meritCost;
+  player.relics.push(relic.id);
+  applyRelicBonus(relic);
+  addLog(`Vinculas ${relic.name}, su poder te envuelve.`);
+  updateUI();
+}
+
+function applyRelicBonus(relic) {
+  if (relic.bonus.attack) player.attack += relic.bonus.attack;
+  if (relic.bonus.defense) player.defense += relic.bonus.defense;
+  if (relic.bonus.hp) {
+    player.maxHp += relic.bonus.hp;
+    player.hp = player.maxHp;
+  }
+  if (relic.bonus.energy) {
+    player.maxEnergy += relic.bonus.energy;
+    player.energy = player.maxEnergy;
+  }
+  if (relic.bonus.fame) gainFame(relic.bonus.fame);
+}
+
+function getXpMultiplierFromRelics() {
+  const hasReduction = player.relics
+    .map((id) => relicPool.find((r) => r.id === id))
+    .filter(Boolean)
+    .find((r) => r.bonus.xpToNextMultiplier);
+  return hasReduction ? hasReduction.bonus.xpToNextMultiplier : 1;
+}
+
+function getEnergyRegenBonus() {
+  const relics = player.relics
+    .map((id) => relicPool.find((r) => r.id === id))
+    .filter(Boolean);
+  const bonus = relics.reduce((acc, relic) => acc + (relic.bonus.energyRegen || 0), 0);
+  return bonus;
+}
+
+function exploreFrontier() {
+  const cost = 14;
+  if (player.energy < cost) {
+    addLog("Necesitas más energía para explorar tierras lejanas.");
+    return;
+  }
+  player.energy = Math.max(0, player.energy - cost);
+
+  const roll = Math.random();
+  if (roll < 0.35) {
+    currentEnemy = { name: "Bestia Errante", hp: 95, attack: 22, defense: 10 };
+    addLog("En la frontera encuentras una bestia errante. ¡Prepárate para combatir!");
+    updateUI();
+    return;
+  }
+
+  const xpGain = Math.floor(60 + Math.random() * 40);
+  const meritGain = 10;
+  gainExperience(xpGain, `Descubres ruinas antiguas: +${xpGain} XP.`);
+  gainMerit(meritGain);
+  gainFame(3);
+  recoverEnergy(4 + getEnergyRegenBonus());
+  updateUI();
+}
+
+function performRitual() {
+  const cost = 20;
+  if (player.energy < cost) {
+    addLog("Tu energía es insuficiente para el ritual.");
+    return;
+  }
+  player.energy = Math.max(0, player.energy - cost);
+
+  const xpGain = 80;
+  gainExperience(xpGain, "Un ritual de iluminación refuerza tu dao interior.");
+  gainMerit(6);
+  gainFame(4);
+  recoverEnergy(2 + getEnergyRegenBonus());
+  updateUI();
 }
 
 function addLog(text, type = "") {
