@@ -95,6 +95,11 @@ button.ghost {
   background: rgba(255, 255, 255, 0.06);
 }
 
+button.warning {
+  color: #f4d35e;
+  border-color: rgba(244, 211, 94, 0.6);
+}
+
 button:hover:not(:disabled) {
   transform: translateY(-2px);
 }
@@ -212,6 +217,14 @@ button:hover:not(:disabled) {
   justify-content: space-between;
   gap: 12px;
   align-items: center;
+}
+
+.meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
 }
 
 .item .info h4 { margin: 0 0 4px; }
